@@ -5,3 +5,11 @@
 :root {
   font-size: 16px;
 }
+
+.htmx-indicator {
+  display: none;
+}
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  display: block;
+}

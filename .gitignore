@@ -3,3 +3,5 @@ output.css
 tmp
 node_modules
 package-lock.json
+*.db
+*_templ.go
