@@ -1,0 +1,115 @@
+package templ
+
+import "twitterclone/db"
+
+templ Search(user ...db.User) {
+	@Page() {
+		<div class="grid grid-cols-4 h-full">
+			<div class="col-span-1">
+				@SidePanel(user...)
+			</div>
+			<div class="flex flex-col col-span-3 gap-4 p-8 bg-slate-100">
+				<label class="flex gap-2 items-center input input-bordered">
+					<input oninput="handleSearch()" id="searchbox" type="text" name="q" class="grow" placeholder="Search" hx-get="/dosearch" hx-vals={ `{ "t": "posts" }` } hx-target="#resultsposts" hx-trigger="input delay:0.2s, init"/>
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 opacity-70"><path fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clip-rule="evenodd"></path></svg>
+				</label>
+				<div role="tablist" class="tabs tabs-lifted">
+					<input type="radio" name="search_tabs" role="tab" class="tab" aria-label="Posts" onchange="handleChange('posts')"/>
+					<div role="tabpanel" class="p-4 rounded-box bg-base-100 border-base-300 tab-content" id="resultsposts">Search Posts</div>
+					<input type="radio" name="search_tabs" role="tab" class="tab" aria-label="People" onchange="handleChange('people')"/>
+					<div role="tabpanel" class="p-4 rounded-box bg-base-100 border-base-300 tab-content" id="resultspeople">Search People</div>
+					<input type="radio" name="search_tabs" role="tab" class="tab" aria-label="Media" onchange="handleChange('media')"/>
+					<div role="tabpanel" class="p-4 rounded-box bg-base-100 border-base-300 tab-content" id="resultsmedia">Search Media</div>
+				</div>
+			</div>
+		</div>
+	}
+	<script>
+		const search = document.getElementById("searchbox")
+
+		const posts = document.getElementById("resultsposts")
+		const people = document.getElementById("resultspeople")
+		const media = document.getElementById("resultsmedia")
+
+		const url = new URL(window.location);
+		const t = url.searchParams.get("type") || "posts"
+		let query = url.searchParams.get("query")
+
+		if (t === "posts") htmx.find("input[aria-label=\"Posts\"]").click()
+		else if (t === "people") htmx.find("input[aria-label=\"People\"]").click()
+		else if (t === "media") htmx.find("input[aria-label=\"Media\"]").click()
+		handleChange(t)
+
+		if (query) {
+			search.value = query
+		}
+		let searched = false
+			htmx.on("htmx:load", function() {
+			if (!searched) {
+				htmx.trigger("#searchbox", "init", {})
+				searched = true
+			}
+		})
+		function handleChange(t) {
+			search.setAttribute("hx-target", "#results"+t)
+			search.setAttribute("hx-vals", `{"t": "${t}" }`)
+
+			url.searchParams.set('type', t);
+			window.history.pushState({}, '', url);
+
+			posts.textContent = "Search Posts"
+			people.textContent = "Search People"
+			media.textContent = "Search Media"
+
+			query = url.searchParams.get("query")
+			search.value = query
+			htmx.trigger("#searchbox", "init", {})
+		}
+		function handleSearch() {
+			url.searchParams.set('query', search.value);
+			window.history.pushState({}, '', url);
+		}
+	</script>
+}
+
+templ People(people []db.SearchPeopleRow) {
+	if len(people) != 0 {
+		<div class="flex flex-col gap-4">
+			for i := range people {
+				@Person(people[i])
+			}
+		</div>
+	} else {
+		Looks like nobody has this name
+	}
+}
+
+templ Person(user db.SearchPeopleRow) {
+	<div class="flex flex-row gap-2">
+		<div class="avatar">
+			<div class="w-12 rounded-md">
+				<img src={ "https://api.dicebear.com/8.x/thumbs/svg?backgroundType=solid&translateY=5&scale=80&seed=" + user.Username }/>
+			</div>
+		</div>
+		<div class="flex flex-col gap-1">
+			<span class="text-lg font-bold leading-none">
+				{ user.Name.String }
+			</span>
+			<span class="leading-none">
+				{ "@" + user.Username }
+			</span>
+		</div>
+	</div>
+}
+
+templ Posts(posts []db.SearchPostsRow) {
+	if len(posts) != 0 {
+		<div class="flex flex-col gap-4">
+			for i := range posts {
+				@SearchPost(posts[i])
+			}
+		</div>
+	} else {
+		Looks like there aren't any posts like this
+	}
+}

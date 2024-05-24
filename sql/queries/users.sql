@@ -21,3 +21,8 @@ INSERT INTO users (
 UPDATE users
 SET name = ?
 WHERE id = ?;
+
+-- name: SearchPeople :many
+SELECT id, username, name FROM users
+WHERE name LIKE concat("%", ?, "%") OR username LIKE concat("%", ?, "%")
+LIMIT 100;

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"twitterclone/db"
 	"twitterclone/templ"
 
@@ -37,7 +38,7 @@ func run() error {
 		return err
 	}
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{})
 
 	app.Use(logger.New(), recover.New())
 	app.Static("/assets", "./assets")
@@ -53,8 +54,7 @@ func run() error {
 		}
 
 		user, err := executor.GetUserFromSession(ctx, session)
-		if errors.Is(err, sql.ErrNoRows) {
-			fmt.Println("Session not found")
+		if err != nil {
 			return Render(c, templ.Main(posts))
 		}
 		return Render(c, templ.Main(posts, user))
@@ -140,7 +140,44 @@ func run() error {
 		c.Set("HX-Redirect", "/")
 		return c.SendStatus(200)
 	})
+	app.Get("/search", func(c fiber.Ctx) error {
+		session := c.Cookies("session")
+		if session == "" {
+			return Render(c, templ.Search())
+		}
 
+		user, err := executor.GetUserFromSession(ctx, session)
+		if err != nil {
+			return Render(c, templ.Search())
+		}
+		return Render(c, templ.Search(user))
+	})
+	app.Get("/dosearch", func(c fiber.Ctx) error {
+		_type := c.Query("t")
+		trimmedQuery := strings.TrimSpace(c.Query("q"))
+		if _type == "people" {
+			if trimmedQuery == "" {
+				return Render(c, templ.People([]db.SearchPeopleRow{}))
+			}
+			people, err := executor.SearchPeople(ctx, db.SearchPeopleParams{Concat: c.Query("q"), Concat_2: c.Query("q")})
+			if err != nil {
+				fmt.Println(err.Error())
+				return c.SendStatus(400)
+			}
+			return Render(c, templ.People(people))
+		} else if _type == "posts" {
+			if trimmedQuery == "" {
+				return Render(c, templ.Posts([]db.SearchPostsRow{}))
+			}
+			posts, err := executor.SearchPosts(ctx, c.Query("q"))
+			if err != nil {
+				fmt.Println(err.Error())
+				return c.SendStatus(400)
+			}
+			return Render(c, templ.Posts(posts))
+		}
+		return c.SendStatus(400)
+	})
 	app.Get("/sign/up", func(c fiber.Ctx) error {
 		return Render(c, templ.SignUp())
 	})
