@@ -30,7 +30,11 @@ templ Main(posts []db.ListPostsAndUsersRow, user ...db.User) {
 }
 
 templ SidePanel(user ...db.User) {
-	<div class="flex flex-col justify-end p-8 w-full h-full">
+	<div class="flex flex-col justify-between p-8 w-full h-full">
+		<a class="flex gap-2 items-center p-2 text-lg font-bold rounded hover:bg-slate-100" href="/">
+			<img src="/assets/favicon.png" class="h-8"/>
+			Twitter
+		</a>
 		if len(user) == 0 {
 			@SignInBtn()
 		} else {
