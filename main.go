@@ -178,6 +178,10 @@ func run() error {
 		}
 		return c.SendStatus(400)
 	})
+	app.Get("/entersearch", func(c fiber.Ctx) error {
+		c.Set("HX-Redirect", "/search?query="+c.Query("q"))
+		return c.SendStatus(200)
+	})
 	app.Get("/sign/up", func(c fiber.Ctx) error {
 		return Render(c, templ.SignUp())
 	})
