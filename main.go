@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 	"twitterclone/db"
 	"twitterclone/templ"
 
@@ -217,6 +218,27 @@ func run() error {
 		SetSession(c, token)
 		c.Set("HX-Redirect", "/onboarding")
 		return c.SendStatus(200)
+	})
+	app.Post("/post", func(c fiber.Ctx) error {
+		session := c.Cookies("session")
+		if session == "" {
+			return Render(c, templ.Search())
+		}
+
+		user, err := executor.GetUserFromSession(ctx, session)
+		if err != nil {
+			return c.SendStatus(400)
+		}
+		id := idGenerator.Generate()
+
+		err = executor.CreatePost(ctx, db.CreatePostParams{ID: id.Int64(), UserID: user.ID, Content: c.FormValue("content")})
+		if err != nil {
+			return c.SendStatus(500)
+		}
+		if c.FormValue("firstPost") == "true" {
+			return Render(c, templ.PostPanel([]db.ListPostsAndUsersRow{{Name: sql.NullString{Valid: true, String: "Fortnite"}, Username: "fortnite", Content: c.FormValue("content")}}))
+		}
+		return Render(c, templ.Post(db.ListPostsAndUsersRow{ID: id.Int64(), UserID: user.ID, Content: c.FormValue("content"), CreatedAt: time.Now().Unix(), Name: user.Name, Username: user.Username}))
 	})
 	app.Listen(":3000", fiber.ListenConfig{EnablePrefork: true})
 	return nil

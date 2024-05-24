@@ -4,21 +4,11 @@ import "twitterclone/db"
 
 templ Main(posts []db.ListPostsAndUsersRow, user ...db.User) {
 	@Page() {
-		<div class="grid grid-cols-4 h-full">
+		<div class="grid overflow-hidden grid-cols-4 h-full">
 			<div class="col-span-1">
 				@SidePanel(user...)
 			</div>
-			if len(posts) == 0 {
-				<div class="flex col-span-2 justify-center items-center text-lg bg-slate-100">
-					Looks like there aren't any posts yet
-				</div>
-			} else {
-				<div class="flex flex-col col-span-2 p-8 bg-slate-100">
-					for i := range len(posts) {
-						@Post(posts[i])
-					}
-				</div>
-			}
+			@PostPanel(posts, user...)
 			<div class="col-span-1 p-8">
 				<label id="search" class="flex gap-2 items-center input input-bordered">
 					<input name="q" type="text" class="grow" placeholder="Search" hx-get="/entersearch" hx-trigger="keyup[key=='Enter']"/>
@@ -27,6 +17,62 @@ templ Main(posts []db.ListPostsAndUsersRow, user ...db.User) {
 			</div>
 		</div>
 	}
+	<script>
+		const tx = document.getElementsByTagName("textarea");
+		
+		for (let i = 0; i < tx.length; i++) {
+			tx[i].value = ''
+			if (tx[i].value == '') {
+				tx[i].setAttribute("style", "height:" + 48 + "px;overflow-y:hidden;");
+			} else {
+				tx[i].setAttribute("style", "height:" + (tx[i].scrollHeight) + "px;overflow-y:hidden;");
+			}
+			tx[i].addEventListener("input", onInput, false);
+			tx[i].addEventListener("keypress", cancelEnter, false);
+		}
+		function cancelEnter(e) {
+			if (e.key === 'Enter' && !(e.shiftKey || e.ctrlKey)){
+				e.preventDefault()
+			}
+		}
+		function isEmpty() {
+			return tx[0].value.trim() == ""
+		}
+		function onInput(e) {
+			this.style.height = 'auto';
+			this.style.height = (this.scrollHeight) + "px";
+			if (this.value?.split("\n").length < 2) {
+				this.style.height = 48 + "px";
+			}
+			if (this.value?.split("\n").length > 14) {
+				this.style.height = 408 + "px"
+			}
+			return true
+		}
+	</script>
+}
+
+templ PostPanel(posts []db.ListPostsAndUsersRow, user ...db.User) {
+	<div class="overflow-scroll col-span-2 h-screen" id="postscontainer">
+		if len(posts) == 0 {
+			<div class="flex flex-col gap-4 p-8 text-lg bg-slate-100">
+				if len(user) != 0 {
+					@NewPost(user[0], true)
+				}
+				<span class="w-full text-center" id="posts">Looks like there aren't any posts yet</span>
+			</div>
+		} else {
+			<div class="flex flex-col gap-4 p-8 bg-slate-100" id="posts">
+				if len(user) != 0 {
+					@NewPost(user[0], false)
+					<hr/>
+				}
+				for i := range len(posts) {
+					@Post(posts[i])
+				}
+			</div>
+		}
+	</div>
 }
 
 templ SidePanel(user ...db.User) {
@@ -90,6 +136,32 @@ templ User(user db.User) {
 	</div>
 }
 
+templ NewPost(user db.User, empty bool) {
+	<div class="flex gap-2 w-full" id="newpost">
+		<div class="avatar">
+			<div class="w-12 h-12 rounded-md">
+				<img src={ "https://api.dicebear.com/8.x/bottts-neutral/svg?backgroundType=solid&translateY=5&scale=80&seed=" + user.Username }/>
+			</div>
+		</div>
+		<textarea
+			name="content"
+			id="content"
+			class="resize-none grow textarea textarea-bordered"
+			placeholder="What's happening?"
+			hx-post="/post"
+			hx-trigger="keyup[!ctrlKey&&!shiftKey&&key=='Enter'&&!isEmpty()]"
+			if !empty {
+				hx-swap="afterend scroll:top"
+				hx-target="#newpost"
+			} else {
+				hx-swap="outerHTML"
+				hx-target="#postscontainer"
+				hx-vals='{"firstPost": "true"}'
+			}
+		></textarea>
+	</div>
+}
+
 templ Post(post db.ListPostsAndUsersRow) {
 	<div class="flex flex-row gap-2">
 		<div class="avatar">
@@ -102,7 +174,7 @@ templ Post(post db.ListPostsAndUsersRow) {
 				<span class="text-lg font-bold leading-none">{ post.Name.String }</span>
 				<span class="leading-none text-neutral-600">{ "@" + post.Username }</span>
 			</div>
-			<div>
+			<div class="text-left">
 				{ post.Content }
 			</div>
 		</div>
