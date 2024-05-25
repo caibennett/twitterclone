@@ -1,8 +1,16 @@
 -- name: ListPostsAndUsers :many
 SELECT posts.id, posts.user_id, posts.content, posts.created_at, users.name, users.username FROM posts
-INNER JOIN users ON posts.user_id=users.id
+INNER JOIN users ON posts.user_id = users.id
+WHERE posts.id < ?
 ORDER BY posts.created_at DESC
-LIMIT 100;
+LIMIT 11;
+
+-- name: ListPostsAndUsersStart :many
+SELECT posts.id, posts.user_id, posts.content, posts.created_at, users.name, users.username FROM posts
+INNER JOIN users ON posts.user_id = users.id
+ORDER BY posts.created_at DESC
+LIMIT 11;
+
 
 -- name: SearchPosts :many
 SELECT posts.id, posts.user_id, posts.content, posts.created_at, users.name, users.username FROM posts

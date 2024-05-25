@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"twitterclone/db"
@@ -45,7 +46,7 @@ func run() error {
 	app.Static("/assets", "./assets")
 
 	app.Get("/", func(c fiber.Ctx) error {
-		posts, err := executor.ListPostsAndUsers(ctx)
+		posts, err := executor.ListPostsAndUsersStart(ctx)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return c.SendString("Failed to load posts")
 		}
@@ -59,6 +60,20 @@ func run() error {
 			return Render(c, templ.Main(posts))
 		}
 		return Render(c, templ.Main(posts, user))
+	})
+	app.Get("/posts", func(c fiber.Ctx) error {
+		last := c.Query("last")
+		num, err := strconv.Atoi(last)
+		if err != nil {
+			return c.SendStatus(400)
+		}
+		fmt.Println(last)
+		posts, err := executor.ListPostsAndUsers(ctx, int64(num))
+		if err != nil {
+			return c.SendStatus(400)
+		}
+		fmt.Println(len(posts))
+		return Render(c, templ.RawPostList(posts))
 	})
 	app.Get("/onboarding", func(c fiber.Ctx) error {
 		session := c.Cookies("session")
@@ -236,7 +251,7 @@ func run() error {
 			return c.SendStatus(500)
 		}
 		if c.FormValue("firstPost") == "true" {
-			return Render(c, templ.PostPanel([]db.ListPostsAndUsersRow{{Name: sql.NullString{Valid: true, String: "Fortnite"}, Username: "fortnite", Content: c.FormValue("content")}}))
+			return Render(c, templ.PostPanel([]db.ListPostsAndUsersStartRow{{Name: sql.NullString{Valid: true, String: "Fortnite"}, Username: "fortnite", Content: c.FormValue("content")}}))
 		}
 		return Render(c, templ.Post(db.ListPostsAndUsersRow{ID: id.Int64(), UserID: user.ID, Content: c.FormValue("content"), CreatedAt: time.Now().Unix(), Name: user.Name, Username: user.Username}))
 	})

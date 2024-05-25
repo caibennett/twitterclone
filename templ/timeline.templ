@@ -1,8 +1,9 @@
 package templ
 
 import "twitterclone/db"
+import "fmt"
 
-templ Main(posts []db.ListPostsAndUsersRow, user ...db.User) {
+templ Main(posts []db.ListPostsAndUsersStartRow, user ...db.User) {
 	@Page() {
 		<div class="grid overflow-hidden grid-cols-4 h-full">
 			<div class="col-span-1">
@@ -52,7 +53,7 @@ templ Main(posts []db.ListPostsAndUsersRow, user ...db.User) {
 	</script>
 }
 
-templ PostPanel(posts []db.ListPostsAndUsersRow, user ...db.User) {
+templ PostPanel(posts []db.ListPostsAndUsersStartRow, user ...db.User) {
 	<div class="overflow-scroll col-span-2 h-screen" id="postscontainer">
 		if len(posts) == 0 {
 			<div class="flex flex-col gap-4 p-8 text-lg bg-slate-100">
@@ -67,8 +68,14 @@ templ PostPanel(posts []db.ListPostsAndUsersRow, user ...db.User) {
 					@NewPost(user[0], false)
 					<hr/>
 				}
-				for i := range len(posts) {
-					@Post(posts[i])
+				for i := range posts {
+					if i == len(posts)-1 {
+						<div hx-get={ "/posts/?last=" + fmt.Sprint(posts[i].ID) } hx-trigger="intersect once" hx-swap="afterend">
+							@Post(CopyToPostAndUsersRow(posts[i]))
+						</div>
+					} else {
+						@Post(CopyToPostAndUsersRow(posts[i]))
+					}
 				}
 			</div>
 		}
@@ -136,66 +143,6 @@ templ User(user db.User) {
 	</div>
 }
 
-templ NewPost(user db.User, empty bool) {
-	<div class="flex gap-2 w-full" id="newpost">
-		<div class="avatar">
-			<div class="w-12 h-12 rounded-md">
-				<img src={ "https://api.dicebear.com/8.x/bottts-neutral/svg?backgroundType=solid&translateY=5&scale=80&seed=" + user.Username }/>
-			</div>
-		</div>
-		<textarea
-			name="content"
-			id="content"
-			class="resize-none grow textarea textarea-bordered"
-			placeholder="What's happening?"
-			hx-post="/post"
-			hx-trigger="keyup[!ctrlKey&&!shiftKey&&key=='Enter'&&!isEmpty()]"
-			if !empty {
-				hx-swap="afterend scroll:top"
-				hx-target="#newpost"
-			} else {
-				hx-swap="outerHTML"
-				hx-target="#postscontainer"
-				hx-vals='{"firstPost": "true"}'
-			}
-		></textarea>
-	</div>
-}
-
-templ Post(post db.ListPostsAndUsersRow) {
-	<div class="flex flex-row gap-2">
-		<div class="avatar">
-			<div class="w-12 rounded-md">
-				<img src={ "https://api.dicebear.com/8.x/bottts-neutral/svg?backgroundType=solid&translateY=5&scale=80&seed=" + post.Username }/>
-			</div>
-		</div>
-		<div class="flex flex-col gap-1">
-			<div class="flex flex-row gap-2 items-center">
-				<span class="text-lg font-bold leading-none">{ post.Name.String }</span>
-				<span class="leading-none text-neutral-600">{ "@" + post.Username }</span>
-			</div>
-			<div class="text-left">
-				{ post.Content }
-			</div>
-		</div>
-	</div>
-}
-
-templ SearchPost(post db.SearchPostsRow) {
-	<div class="flex flex-row gap-2">
-		<div class="avatar">
-			<div class="w-12 rounded-md">
-				<img src={ "https://api.dicebear.com/8.x/bottts-neutral/svg?backgroundType=solid&translateY=5&scale=80&seed=" + post.Username }/>
-			</div>
-		</div>
-		<div class="flex flex-col gap-1">
-			<div class="flex flex-row gap-2 items-center">
-				<span class="text-lg font-bold leading-none">{ post.Name.String }</span>
-				<span class="leading-none text-neutral-600">{ "@" + post.Username }</span>
-			</div>
-			<div>
-				{ post.Content }
-			</div>
-		</div>
-	</div>
+func CopyToPostAndUsersRow(a db.ListPostsAndUsersStartRow) db.ListPostsAndUsersRow {
+	return db.ListPostsAndUsersRow{ID: a.ID, UserID: a.UserID, Content: a.Content, CreatedAt: a.CreatedAt, Name: a.Name, Username: a.Username}
 }
