@@ -253,7 +253,34 @@ func run() error {
 		if c.FormValue("firstPost") == "true" {
 			return Render(c, templ.PostPanel([]db.ListPostsAndUsersStartRow{{Name: sql.NullString{Valid: true, String: "Fortnite"}, Username: "fortnite", Content: c.FormValue("content")}}))
 		}
-		return Render(c, templ.Post(db.ListPostsAndUsersRow{ID: id.Int64(), UserID: user.ID, Content: c.FormValue("content"), CreatedAt: time.Now().Unix(), Name: user.Name, Username: user.Username}))
+		return Render(c, templ.Post(db.ListPostsAndUsersRow{ID: id.Int64(), UserID: user.ID, Content: c.FormValue("content"), CreatedAt: time.Now().Unix(), Name: user.Name, Username: user.Username}, true))
+	})
+
+	app.Get("/posts/:id", func(c fiber.Ctx) error {
+		idString := c.Params("id")
+		id, err := strconv.ParseInt(idString, 10, 0)
+		if err != nil {
+			return c.SendStatus(400)
+		}
+
+		post, err := executor.GetPostAndUser(ctx, id)
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.SendStatus(404)
+		}
+		if err != nil {
+			return c.SendStatus(400)
+		}
+
+		session := c.Cookies("session")
+		if session == "" {
+			return Render(c, templ.PostPage(post))
+		}
+
+		user, err := executor.GetUserFromSession(ctx, session)
+		if err != nil {
+			return Render(c, templ.PostPage(post))
+		}
+		return Render(c, templ.PostPage(post, user))
 	})
 	app.Listen(":3000", fiber.ListenConfig{EnablePrefork: true})
 	return nil

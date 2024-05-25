@@ -56,14 +56,14 @@ templ Main(posts []db.ListPostsAndUsersStartRow, user ...db.User) {
 templ PostPanel(posts []db.ListPostsAndUsersStartRow, user ...db.User) {
 	<div class="overflow-scroll col-span-2 h-screen" id="postscontainer">
 		if len(posts) == 0 {
-			<div class="flex flex-col gap-4 p-8 text-lg bg-slate-100">
+			<div class="flex flex-col p-4 text-lg bg-slate-100">
 				if len(user) != 0 {
 					@NewPost(user[0], true)
 				}
 				<span class="w-full text-center" id="posts">Looks like there aren't any posts yet</span>
 			</div>
 		} else {
-			<div class="flex flex-col gap-4 p-8 bg-slate-100" id="posts">
+			<div class="flex flex-col p-8 bg-slate-100" id="posts">
 				if len(user) != 0 {
 					@NewPost(user[0], false)
 					<hr/>
@@ -71,10 +71,10 @@ templ PostPanel(posts []db.ListPostsAndUsersStartRow, user ...db.User) {
 				for i := range posts {
 					if i == len(posts)-1 {
 						<div hx-get={ "/posts/?last=" + fmt.Sprint(posts[i].ID) } hx-trigger="intersect once" hx-swap="afterend">
-							@Post(CopyToPostAndUsersRow(posts[i]))
+							@Post(CopyToPostAndUsersRow(posts[i]), true)
 						</div>
 					} else {
-						@Post(CopyToPostAndUsersRow(posts[i]))
+						@Post(CopyToPostAndUsersRow(posts[i]), true)
 					}
 				}
 			</div>

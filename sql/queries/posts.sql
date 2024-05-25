@@ -24,3 +24,8 @@ INSERT INTO posts (
 ) VALUES (
   ?, ?, ?, unixepoch('now'), unixepoch('now')
 );
+
+-- name: GetPostAndUser :one
+SELECT posts.*, users.name, users.username FROM posts
+INNER JOIN users ON posts.user_id = users.id
+WHERE posts.id = ?;
