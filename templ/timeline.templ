@@ -80,6 +80,13 @@ templ PostPanel(posts []db.ListPostsAndUsersStartRow, user ...db.User) {
 			</div>
 		}
 	</div>
+	<script>
+		addEventListener("htmx:afterRequest", (e) => {
+			if (e.target.name === 'content') {
+				e.target.value = ""
+			}
+		})
+	</script>
 }
 
 templ SidePanel(user ...db.User) {
