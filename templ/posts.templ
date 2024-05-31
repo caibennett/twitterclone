@@ -4,7 +4,7 @@ import "twitterclone/db"
 import "fmt"
 
 templ NewPost(user db.User, empty bool) {
-	<div class="flex gap-2 m-4 w-full" id="newpost">
+	<div class="flex gap-2 m-4 w-full">
 		<div class="avatar">
 			<div class="w-12 h-12 rounded-md">
 				<img src={ "https://api.dicebear.com/8.x/bottts-neutral/svg?backgroundType=solid&translateY=5&scale=80&seed=" + user.Username }/>
@@ -19,7 +19,7 @@ templ NewPost(user db.User, empty bool) {
 			hx-trigger="keyup[!ctrlKey&&!shiftKey&&key=='Enter'&&!isEmpty()]"
 			if !empty {
 				hx-swap="afterend scroll:top"
-				hx-target="#newpost"
+				hx-target="#insertAfter"
 			} else {
 				hx-swap="outerHTML"
 				hx-target="#postscontainer"
