@@ -10,7 +10,7 @@ RUN go mod download
 COPY . .
 
 ENV CGO_ENABLED=1
-RUN npm i tailwindcss -g
+RUN npm i tailwindcss -g && npm i
 RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest && go install github.com/a-h/templ/cmd/templ@latest
 RUN tailwindcss --minify -i ./templ/input.css -o ./static/output.css && sqlc generate && templ generate
 RUN go build -o bin .
